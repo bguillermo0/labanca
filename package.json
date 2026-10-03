@@ -1,0 +1,13 @@
+{
+  "name": "la-banca",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dinámica NOVATOS vs VETERANOS con llaveros NFC",
+  "type": "module",
+  "dependencies": {
+    "@netlify/blobs": "^11.1.3"
+  },
+  "scripts": {
+    "test": "node test.mjs"
+  }
+}

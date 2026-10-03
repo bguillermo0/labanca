@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="color-scheme" content="light dark">
+<title>La Banca</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Familjen+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Concepto: mesa de juego. Pantalla de equipo = marcador a pantalla completa;
+     pantalla de banca = dos cuentas con fichas rápidas y libro de movimientos. */
+  :root {
+    --bg: #e8f0eb; --surface: #f7faf8; --ink: #10281f; --muted: #587064; --line: #c3d3ca;
+    --brass: #8f6410; --up: #12804c; --down: #c4223f; --on-up: #ffffff; --on-down: #ffffff;
+    --nov: #12708f; --vet: #7b3fb0;
+    --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+    --body: "Familjen Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0a221a; --surface: #10342a; --ink: #e9f4ee; --muted: #8fb0a1; --line: #1f4b3d;
+      --brass: #d9a944; --up: #3ddc97; --down: #ff6b84; --on-up: #05160f; --on-down: #2a0710;
+      --nov: #62c7ee; --vet: #c79bf0; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0a221a; --surface: #10342a; --ink: #e9f4ee; --muted: #8fb0a1; --line: #1f4b3d;
+    --brass: #d9a944; --up: #3ddc97; --down: #ff6b84; --on-up: #05160f; --on-down: #2a0710;
+    --nov: #62c7ee; --vet: #c79bf0; color-scheme: dark;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px;
+         padding-inline: 16px; padding-block: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-bottom, 0px)); }
+  [data-team="novatos"] { --team: var(--nov); }
+  [data-team="veteranos"] { --team: var(--vet); }
+  button { font: inherit; cursor: pointer; border: 0; touch-action: manipulation; }
+  button:focus-visible, input:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .live { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); letter-spacing: .04em; }
+  .live i { width: 9px; height: 9px; border-radius: 50%; background: var(--down); }
+  .live.on i { background: var(--up); box-shadow: 0 0 0 4px color-mix(in srgb, var(--up) 25%, transparent); }
+
+  .scoreboard { min-height: 100%; max-width: 640px; margin-inline: auto; display: flex; flex-direction: column; justify-content: space-between; gap: 24px; padding-block: 8px; }
+  .scoreboard header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .team-tag { font-family: var(--display); font-weight: 800; font-size: 28px; letter-spacing: .22em; color: var(--team); }
+  .tally { text-align: center; padding: 28px 12px 24px; border: 2px solid var(--line); border-radius: 6px; background: var(--surface); transition: border-color .3s, box-shadow .5s; }
+  .tally .cap { font-size: 13px; letter-spacing: .28em; text-transform: uppercase; color: var(--muted); }
+  .tally .big { font-family: var(--display); font-weight: 900; line-height: .95; font-size: clamp(96px, 34vw, 210px); margin-top: 10px; transition: color .3s; }
+  .tally .big small { font-size: .32em; font-weight: 800; color: var(--muted); margin-left: .12em; }
+  .tally .delta { min-height: 44px; margin-top: 10px; font-family: var(--display); font-weight: 800; font-size: 36px; opacity: 0; transition: opacity .3s; }
+  .tally.up { border-color: var(--up); box-shadow: 0 0 0 6px color-mix(in srgb, var(--up) 22%, transparent); }
+  .tally.down { border-color: var(--down); box-shadow: 0 0 0 6px color-mix(in srgb, var(--down) 22%, transparent); }
+  .tally.up .big, .tally.up .delta { color: var(--up); }
+  .tally.down .big, .tally.down .delta { color: var(--down); }
+  .tally.up .delta, .tally.down .delta { opacity: 1; }
+  .scoreboard footer { text-align: center; font-size: 13px; color: var(--muted); }
+
+  .notice { max-width: 420px; margin: 18vh auto 0; text-align: center; }
+  .notice h1 { font-family: var(--display); font-weight: 800; font-size: 40px; letter-spacing: .06em; }
+  .notice p { margin-top: 10px; color: var(--muted); line-height: 1.5; }
+
+  .bank { max-width: 980px; margin-inline: auto; }
+  .bank > header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-bottom: 16px; }
+  .bank h1 { font-family: var(--display); font-weight: 900; font-size: 34px; letter-spacing: .16em; color: var(--brass); }
+  .accounts { display: grid; gap: 16px; grid-template-columns: 1fr; }
+  @media (min-width: 760px) { .accounts { grid-template-columns: 1fr 1fr; } }
+  .acct { background: var(--surface); border: 2px solid var(--line); border-top: 8px solid var(--team); border-radius: 6px; padding: 16px; min-width: 0; }
+  .acct h2 { font-family: var(--display); font-weight: 800; font-size: 22px; letter-spacing: .24em; color: var(--team); }
+  .acct .bal { font-family: var(--display); font-weight: 900; font-size: 84px; line-height: 1; margin-block: 6px 14px; }
+  .acct .bal small { font-size: 32px; color: var(--muted); margin-left: 4px; }
+  .chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .chips + .chips { margin-top: 8px; }
+  .chip { padding: 14px 0; border-radius: 6px; font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums; }
+  .chip.minus, .go.minus { background: var(--down); color: var(--on-down); }
+  .chip.plus, .go.plus { background: var(--up); color: var(--on-up); }
+  .chip:active, .go:active, .tool:active { transform: translateY(1px) scale(.98); }
+  .line { display: flex; gap: 8px; margin-top: 12px; }
+  .line input { flex: 1; min-width: 0; padding: 12px; font: inherit; font-size: 18px; color: var(--ink); background: var(--bg); border: 2px solid var(--line); border-radius: 6px; }
+  .go { padding: 12px 16px; border-radius: 6px; font-weight: 700; font-size: 18px; }
+  .go.neutral { background: var(--ink); color: var(--bg); font-size: 15px; }
+  .tools { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .tool { flex: 1 1 160px; padding: 14px; border-radius: 6px; font-weight: 700; background: var(--surface); color: var(--ink); border: 2px solid var(--line); }
+  .tool.warn.armed { background: var(--down); color: var(--on-down); border-color: var(--down); }
+  .ledger { margin-top: 28px; }
+  .ledger h3 { font-size: 13px; letter-spacing: .24em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .ledger ol { list-style: none; margin-top: 8px; padding: 0; border-top: 2px solid var(--line); }
+  .ledger li { display: flex; justify-content: space-between; gap: 12px; padding-block: 10px; border-bottom: 1px solid var(--line); font-size: 15px; }
+  .ledger li > * { min-width: 0; }
+  .ledger .who { font-weight: 700; color: var(--team); letter-spacing: .08em; }
+  .ledger .when { color: var(--muted); font-size: 13px; margin-left: 8px; }
+  .ledger .up { color: var(--up); font-weight: 700; } .ledger .down { color: var(--down); font-weight: 700; }
+  .ledger .empty { color: var(--muted); padding-block: 14px; }
+  #toast { position: fixed; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--down); color: var(--on-down); padding: 12px; border-radius: 6px; font-weight: 700; text-align: center; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<section id="notice" class="notice">
+  <h1>LA BANCA</h1>
+  <p id="noticeText">Conectando con la banca…</p>
+</section>
+
+<main id="teamView" class="scoreboard" hidden>
+  <header>
+    <span class="team-tag" id="teamName">—</span>
+    <span class="live" id="teamLive"><i></i><span>Conectando…</span></span>
+  </header>
+  <div class="tally" id="tally">
+    <div class="cap">Saldo disponible</div>
+    <div class="big num" id="teamBal">—<small>€</small></div>
+    <div class="delta num" id="teamDelta"></div>
+  </div>
+  <footer>Este saldo lo actualiza la banca al momento.</footer>
+</main>
+
+<main id="bankView" class="bank" hidden>
+  <header>
+    <h1>LA BANCA</h1>
+    <span class="live" id="bankLive"><i></i><span>Conectando…</span></span>
+  </header>
+  <div class="accounts" id="accounts"></div>
+  <div class="tools">
+    <button class="tool" id="undo">↶ Deshacer último</button>
+    <button class="tool warn" id="reset">Reiniciar a 500 €</button>
+  </div>
+  <section class="ledger">
+    <h3>Movimientos</h3>
+    <ol id="ledger"></ol>
+  </section>
+</main>
+<div id="toast" hidden></div>
+
+<script>
+(() => {
+  const POLL_MS = 1000;          // cada cuánto consulta el móvil de un equipo
+  const NAMES = { novatos: 'NOVATOS', veteranos: 'VETERANOS' };
+  const STEPS = [10, 50, 100, 250];
+  const $ = (id) => document.getElementById(id);
+  const money = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 });
+  const r2 = (n) => Math.round(n * 100) / 100;
+  const signed = (n) => (n >= 0 ? '+' : '−') + money.format(Math.abs(n)) + ' €';
+
+  const [, kind, token] = location.pathname.split('/');      // /t/<token>  o  /b/<token>
+  const mode = kind === 't' ? 'team' : kind === 'b' ? 'bank' : null;
+
+  const notice = (text) => { $('teamView').hidden = true; $('bankView').hidden = true; $('notice').hidden = false; $('noticeText').textContent = text; };
+  const setLive = (on) => {
+    for (const id of ['teamLive', 'bankLive']) {
+      $(id).classList.toggle('on', on);
+      $(id).lastElementChild.textContent = on ? 'En directo' : 'Reconectando…';
+    }
+  };
+  let toastTimer;
+  const toast = (m) => { const t = $('toast'); t.textContent = m; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 3000); };
+
+  if (!mode || !token) { notice('Este enlace no es válido. Acerca de nuevo el llavero al móvil.'); return; }
+
+  async function call(path, body) {
+    const r = await fetch('/api/' + path, body === undefined
+      ? { cache: 'no-store' }
+      : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    let j = null; try { j = await r.json(); } catch {}
+    if (!r.ok) { const e = new Error((j && j.error) || 'Error'); e.status = r.status; throw e; }
+    return j;
+  }
+
+  // ---------------- equipo ----------------
+  let lastShown = null, lastRev = -1, flashTimer;
+  function renderTeam(d) {
+    if (d.rev < lastRev) return;               // respuesta atrasada: se ignora
+    lastRev = d.rev;
+    $('notice').hidden = true; $('bankView').hidden = true; $('teamView').hidden = false;
+    const key = d.name.toLowerCase();
+    $('teamView').dataset.team = key;
+    $('teamName').textContent = d.name;
+    document.title = d.name + ' · Saldo';
+    $('teamBal').innerHTML = money.format(d.balance) + '<small>€</small>';
+    if (lastShown !== null && lastShown !== d.balance) {
+      const diff = r2(d.balance - lastShown);
+      $('teamDelta').textContent = signed(diff);
+      const c = $('tally'); c.classList.remove('up', 'down'); void c.offsetWidth;
+      c.classList.add(diff > 0 ? 'up' : 'down');
+      clearTimeout(flashTimer); flashTimer = setTimeout(() => c.classList.remove('up', 'down'), 4000);
+      try { navigator.vibrate && navigator.vibrate(diff > 0 ? 90 : [70, 50, 70]); } catch {}
+    }
+    lastShown = d.balance;
+  }
+
+  // ---------------- banca ----------------
+  let built = false, bankRev = -1;
+  function buildBank() {
+    $('accounts').innerHTML = Object.keys(NAMES).map((k) => `
+      <section class="acct" data-team="${k}">
+        <h2>${NAMES[k]}</h2>
+        <div class="bal num"><span id="bal-${k}">0</span><small>€</small></div>
+        <div class="chips">${STEPS.slice().reverse().map((s) => `<button class="chip minus" data-team="${k}" data-d="${-s}">−${s}</button>`).join('')}</div>
+        <div class="chips">${STEPS.map((s) => `<button class="chip plus" data-team="${k}" data-d="${s}">+${s}</button>`).join('')}</div>
+        <div class="line">
+          <input id="amt-${k}" type="number" inputmode="decimal" min="0" placeholder="Otra cantidad" aria-label="Cantidad para ${NAMES[k]}">
+          <button class="go minus" data-team="${k}" data-act="sub" aria-label="Restar">−</button>
+          <button class="go plus" data-team="${k}" data-act="add" aria-label="Sumar">+</button>
+        </div>
+        <div class="line">
+          <input id="set-${k}" type="number" inputmode="decimal" placeholder="Fijar saldo exacto" aria-label="Fijar saldo de ${NAMES[k]}">
+          <button class="go neutral" data-team="${k}" data-act="set">Fijar</button>
+        </div>
+      </section>`).join('');
+    built = true;
+  }
+  function renderBank(d) {
+    if (d.rev < bankRev) return;
+    bankRev = d.rev;
+    $('notice').hidden = true; $('teamView').hidden = true; $('bankView').hidden = false;
+    if (!built) buildBank();
+    for (const k of Object.keys(NAMES)) $('bal-' + k).textContent = money.format(d.teams[k].balance);
+    const li = d.hist.map((h) => {
+      const time = new Date(h.ts).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      return `<li data-team="${h.team}"><span><span class="who">${NAMES[h.team]}</span><span class="when">${time}${h.note ? ' · ' + h.note : ''}</span></span>
+        <span class="num"><span class="${h.after >= h.before ? 'up' : 'down'}">${signed(h.after - h.before)}</span> → ${money.format(h.after)} €</span></li>`;
+    }).join('');
+    $('ledger').innerHTML = li || '<li class="empty">Aún no hay movimientos.</li>';
+  }
+
+  // Las acciones de la banca se envían de una en una, en orden.
+  let chain = Promise.resolve();
+  const act = (action, body) => {
+    chain = chain.then(() => call(`b/${token}/${action}`, body).then(renderBank)).catch((e) => toast(e.message));
+  };
+
+  $('accounts').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    const team = b.dataset.team;
+    if (b.dataset.d) return act('adjust', { team, delta: Number(b.dataset.d) });
+    if (b.dataset.act === 'add' || b.dataset.act === 'sub') {
+      const el = $('amt-' + team), v = Number(el.value);
+      if (!(v > 0)) return toast('Escribe una cantidad mayor que cero');
+      el.value = ''; return act('adjust', { team, delta: b.dataset.act === 'add' ? v : -v });
+    }
+    if (b.dataset.act === 'set') {
+      const el = $('set-' + team);
+      if (el.value === '' || !Number.isFinite(Number(el.value))) return toast('Escribe el saldo exacto');
+      const v = Number(el.value); el.value = ''; return act('set', { team, balance: v });
+    }
+  });
+  $('undo').onclick = () => act('undo', {});
+  let armTimer;
+  $('reset').onclick = () => {
+    const b = $('reset');
+    if (!b.classList.contains('armed')) {
+      b.classList.add('armed'); b.textContent = 'Pulsa otra vez para confirmar';
+      armTimer = setTimeout(() => { b.classList.remove('armed'); b.textContent = 'Reiniciar a 500 €'; }, 3000);
+      return;
+    }
+    clearTimeout(armTimer); b.classList.remove('armed'); b.textContent = 'Reiniciar a 500 €'; act('reset', {});
+  };
+
+  // ---------------- sondeo ----------------
+  async function tick() {
+    try {
+      const d = await call((mode === 'team' ? 't/' : 'b/') + token);
+      setLive(true);
+      mode === 'team' ? renderTeam(d) : renderBank(d);
+    } catch (e) {
+      if (e.status === 404) { notice('Este enlace no es válido. Acerca de nuevo el llavero al móvil.'); return; }   // se detiene
+      setLive(false);
+    }
+    setTimeout(tick, document.hidden ? 4000 : (mode === 'team' ? POLL_MS : 2500));
+  }
+  tick();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(() => {}); } catch {} } });
+  try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(() => {}); } catch {}
+})();
+</script>
+</body>
+</html>

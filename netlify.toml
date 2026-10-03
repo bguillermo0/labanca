@@ -1,0 +1,22 @@
+[build]
+  publish = "public"
+
+[functions]
+  directory = "netlify/functions"
+
+# Los enlaces de los llaveros (/t/<token> y /b/<token>) cargan la misma página
+[[redirects]]
+  from = "/t/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/b/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Referrer-Policy = "no-referrer"
